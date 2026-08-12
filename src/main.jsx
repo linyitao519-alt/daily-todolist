@@ -2,10 +2,11 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
   CalendarDays, Check, CheckCircle2, ChevronLeft, ChevronRight,
-  Circle, Clock3, Inbox, ListTodo, Menu, MoreHorizontal, Plus,
+  Circle, Clock3, BriefcaseBusiness, Menu, Plus,
   Settings, Sun, Trash2, X
 } from 'lucide-react';
 import './styles.css';
+import ApplicationsWorkspace, { APPLICATIONS_KEY, getInitialApplications } from './applications';
 
 const STORAGE_KEY = 'daily-todo-v1';
 const sections = ['上午', '下午', '晚上'];
@@ -35,6 +36,7 @@ function App() {
     try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || defaultStore; }
     catch { return defaultStore; }
   });
+  const [applications, setApplications] = useState(getInitialApplications);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [filter, setFilter] = useState('今天');
   const [draft, setDraft] = useState('');
@@ -49,6 +51,7 @@ function App() {
   const percent = dayTasks.length ? Math.round(done / dayTasks.length * 100) : 0;
 
   useEffect(() => localStorage.setItem(STORAGE_KEY, JSON.stringify(store)), [store]);
+  useEffect(() => localStorage.setItem(APPLICATIONS_KEY, JSON.stringify(applications)), [applications]);
   useEffect(() => { if (showAdd) inputRef.current?.focus(); }, [showAdd]);
 
   const week = useMemo(() => {
@@ -77,11 +80,11 @@ function App() {
       <button className="close-nav" onClick={() => setMobileNav(false)}><X /></button>
       <div className="brand"><span>今日清单</span><Sun size={19}/></div>
       <nav>
-        {[['今天', Sun], ['计划', CalendarDays], ['已完成', CheckCircle2]].map(([name, Icon]) =>
+        {[['今天', Sun], ['计划', CalendarDays], ['已完成', CheckCircle2], ['秋招投递', BriefcaseBusiness]].map(([name, Icon]) =>
           <button key={name} className={filter === name ? 'active' : ''} onClick={() => { setFilter(name); setMobileNav(false); }}><Icon/><span>{name}</span></button>
         )}
       </nav>
-      <div className="week-progress">
+      {filter !== '秋招投递' ? <div className="week-progress">
         <h3>本周进度</h3>
         <p>{formatDate(week[0]).replace(/星期.*/, '')} – {formatDate(week[6]).replace(/星期.*/, '')}</p>
         <div className="week-row">
@@ -90,11 +93,11 @@ function App() {
           </button>)}
         </div>
         <blockquote>稳步前行，每天一点点 <Sun size={15}/></blockquote>
-      </div>
+      </div> : <div className="recruit-note"><h3>秋招小记</h3><p>记录投递，也记录每一次成长。</p><BriefcaseBusiness/></div>}
       <button className="settings"><Settings/>设置</button>
     </aside>
 
-    <main>
+    {filter === '秋招投递' ? <ApplicationsWorkspace applications={applications} setApplications={setApplications} /> : <><main>
       <header className="date-header">
         <div className="date-nav"><button onClick={() => moveDay(-1)}><ChevronLeft/></button><p>{formatDate(selectedDate)}</p><button onClick={() => moveDay(1)}><ChevronRight/></button></div>
         <h1>{filter === '已完成' ? '完成得很好，继续保持。' : '早上好，今天想完成什么？'} <Sun/></h1>
@@ -134,7 +137,7 @@ function App() {
       <div className="progress-ring" style={{'--progress': `${percent * 3.6}deg`}}><div><strong>{percent}%</strong><span>已完成</span><b>{done} / {dayTasks.length}</b></div></div>
       <p className="encourage">{percent === 100 ? '今天的计划全部完成！' : percent >= 50 ? '继续保持，专注当下！' : '从最小的一步开始吧。'}</p>
       <div className="quote"><h3>今日寄语</h3><blockquote>“<span>专注当下，<br/>一件一件来。</span></blockquote><div className="plant">⌇ ❧</div><div className="cup">♨</div></div>
-    </aside>
+    </aside></>}
   </div>;
 }
 
